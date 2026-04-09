@@ -876,12 +876,12 @@
                                 </button>
                                 <button class="action-btn">
                                     <span>💬</span>
-                                    <span>${post.replies.length} 评论</span>
+                                    <span class="comment-count">${post.replies.length} 评论</span>
                                 </button>
                             </div>
                             
                             <!-- AI 回复 -->
-                            <div class="space-y-3 mt-4">
+                            <div class="replies-container space-y-3 mt-4">
                                 ${post.replies.length === 0 ? `
                                     <div class="typing-indicator" id="typing-${post.id}">
                                         <span></span><span></span><span></span>
@@ -994,13 +994,55 @@
                         createdAt: Date.now()
                     });
                     
-                    // 更新显示
-                    const postIndex = posts.findIndex(p => p.id === post.id);
-                    if (postIndex !== -1) {
-                        posts[postIndex].replies = replies;
-                        DB.set('posts', posts);
-                        console.log('更新帖子，当前回复数:', replies.length);
-                        renderPosts();
+                    // 更新显示 - 只更新当前帖子的回复，避免重绘整个时间线
+                    const postEl = document.querySelector(`[data-post-id="${post.id}"]`);
+                    if (postEl) {
+                        const repliesContainer = postEl.querySelector('.replies-container');
+                        if (repliesContainer) {
+                            // 更新评论数
+                            const commentBtn = postEl.querySelector('.comment-count');
+                            if (commentBtn) {
+                                commentBtn.textContent = `${replies.length} 评论`;
+                            }
+                            
+                            // 添加新回复到容器
+                            const newReply = replies[replies.length - 1];
+                            const replyHTML = `
+                                <div class="flex gap-3 fade-in">
+                                    <div class="w-10 h-10 rounded-xl bg-gradient-to-br ${newReply.follower.color} flex items-center justify-center text-white text-lg flex-shrink-0 shadow-md">
+                                        ${newReply.follower.emoji}
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <div class="reply-bubble">
+                                            <div class="flex items-center gap-2 mb-1">
+                                                <span class="font-bold text-sm text-gray-800">${newReply.follower.name}</span>
+                                                <span class="tag">AI 粉丝</span>
+                                            </div>
+                                            <div class="text-gray-700 text-sm leading-relaxed">${escapeHtml(newReply.content)}</div>
+                                        </div>
+                                        <div class="mt-2 ml-2">
+                                            <span class="text-xs text-gray-300">${formatTime(newReply.createdAt)}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                            repliesContainer.insertAdjacentHTML('beforeend', replyHTML);
+                            
+                            // 保存数据
+                            const postIndex = posts.findIndex(p => p.id === post.id);
+                            if (postIndex !== -1) {
+                                posts[postIndex].replies = replies;
+                                DB.set('posts', posts);
+                            }
+                            console.log('更新帖子，当前回复数:', replies.length);
+                        }
+                    } else {
+                        // 如果找不到元素（可能帖子被删除了），只更新数据
+                        const postIndex = posts.findIndex(p => p.id === post.id);
+                        if (postIndex !== -1) {
+                            posts[postIndex].replies = replies;
+                            DB.set('posts', posts);
+                        }
                     }
                 } catch (error) {
                     console.error('AI 调用失败:', error);
@@ -1017,18 +1059,52 @@
                             `);
                         }
                     }
-                    // 失败后改用模拟回复
+                    // 失败后改用模拟回复 - 同样使用局部更新
                     const mockReply = getMockReply(follower);
                     replies.push({
                         follower,
                         content: mockReply,
                         createdAt: Date.now()
                     });
+                    
+                    // 局部更新DOM
+                    const postEl = document.querySelector(`[data-post-id="${post.id}"]`);
+                    if (postEl) {
+                        const repliesContainer = postEl.querySelector('.replies-container');
+                        if (repliesContainer) {
+                            const commentBtn = postEl.querySelector('.comment-count');
+                            if (commentBtn) {
+                                commentBtn.textContent = `${replies.length} 评论`;
+                            }
+                            
+                            const replyHTML = `
+                                <div class="flex gap-3 fade-in">
+                                    <div class="w-10 h-10 rounded-xl bg-gradient-to-br ${follower.color} flex items-center justify-center text-white text-lg flex-shrink-0 shadow-md">
+                                        ${follower.emoji}
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <div class="reply-bubble">
+                                            <div class="flex items-center gap-2 mb-1">
+                                                <span class="font-bold text-sm text-gray-800">${follower.name}</span>
+                                                <span class="tag">AI 粉丝</span>
+                                            </div>
+                                            <div class="text-gray-700 text-sm leading-relaxed">${escapeHtml(mockReply)}</div>
+                                        </div>
+                                        <div class="mt-2 ml-2">
+                                            <span class="text-xs text-gray-300">${formatTime(Date.now())}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                            repliesContainer.insertAdjacentHTML('beforeend', replyHTML);
+                        }
+                    }
+                    
+                    // 保存数据
                     const postIndex = posts.findIndex(p => p.id === post.id);
                     if (postIndex !== -1) {
                         posts[postIndex].replies = replies;
                         DB.set('posts', posts);
-                        renderPosts();
                     }
                 }
                 
