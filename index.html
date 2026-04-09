@@ -1,0 +1,1563 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 粉丝圈 - 你的专属 AI 社交网络</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #FF6B9D;
+            --primary-light: #FFE4EC;
+            --secondary: #4ECDC4;
+            --accent: #FFE66D;
+            --bg-gradient-1: #FFF5F7;
+            --bg-gradient-2: #F0FFFE;
+            --bg-gradient-3: #FFFBF0;
+            --text-dark: #2D3436;
+            --text-muted: #636E72;
+            --shadow-soft: 0 4px 20px rgba(0,0,0,0.08);
+            --shadow-hover: 0 8px 30px rgba(0,0,0,0.12);
+        }
+        
+        * { box-sizing: border-box; }
+        
+        body { 
+            font-family: 'Noto Sans SC', 'Nunito', sans-serif; 
+            background: linear-gradient(135deg, var(--bg-gradient-1) 0%, var(--bg-gradient-2) 50%, var(--bg-gradient-3) 100%);
+            min-height: 100vh;
+            color: var(--text-dark);
+        }
+        
+        .glass { 
+            background: rgba(255, 255, 255, 0.85); 
+            backdrop-filter: blur(12px); 
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            border-radius: 24px;
+            box-shadow: var(--shadow-soft);
+        }
+        
+        .glass:hover {
+            box-shadow: var(--shadow-hover);
+        }
+        
+        .post-card { 
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border-radius: 20px;
+            overflow: hidden;
+        }
+        
+        .post-card:hover { 
+            transform: translateY(-4px) scale(1.01);
+            box-shadow: var(--shadow-hover);
+        }
+        
+        .follower-avatar { 
+            width: 44px; 
+            height: 44px; 
+            border-radius: 50%;
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            font-weight: bold; 
+            color: white;
+            font-size: 1.2rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            transition: transform 0.2s ease;
+        }
+        
+        .follower-avatar:hover {
+            transform: scale(1.1) rotate(5deg);
+        }
+        
+        .user-avatar {
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            color: white;
+            font-size: 1.5rem;
+            box-shadow: 0 6px 20px rgba(255, 107, 157, 0.4);
+            border: 3px solid white;
+        }
+        
+        .typing-indicator { 
+            display: inline-flex; 
+            gap: 6px; 
+            align-items: center;
+            padding: 10px 14px;
+            background: linear-gradient(135deg, var(--primary-light), #fff);
+            border-radius: 18px;
+            min-width: 140px;
+        }
+        
+        .typing-indicator span { 
+            width: 8px; 
+            height: 8px; 
+            background: var(--primary);
+            border-radius: 50%;
+            animation: typing 1.4s infinite ease-in-out;
+            flex-shrink: 0;
+        }
+        
+        .typing-indicator .typing-text {
+            margin-left: 6px;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+        
+        .typing-indicator span:nth-child(1) { animation-delay: 0s; }
+        .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+        .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+        
+        @keyframes typing { 
+            0%, 60%, 100% { transform: translateY(0); opacity: 0.4; } 
+            30% { transform: translateY(-8px); opacity: 1; } 
+        }
+        
+        .fade-in { 
+            animation: fadeIn 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        @keyframes fadeIn { 
+            from { opacity: 0; transform: translateY(20px) scale(0.95); } 
+            to { opacity: 1; transform: translateY(0) scale(1); } 
+        }
+        
+        .emoji-picker { 
+            position: absolute; 
+            background: white; 
+            border-radius: 20px; 
+            padding: 12px; 
+            display: none; 
+            z-index: 1000; 
+            box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+            min-width: 280px;
+            max-height: 320px; 
+            overflow-y: auto;
+            border: 1px solid rgba(0,0,0,0.05);
+        }
+        
+        .emoji-picker.show { 
+            display: grid; 
+            grid-template-columns: repeat(8, 1fr); 
+            gap: 6px;
+            animation: popIn 0.2s ease;
+        }
+        
+        .emoji-picker.position-bottom {
+            top: 100%;
+            bottom: auto;
+            margin-top: 12px;
+            margin-bottom: 0;
+        }
+        
+        .emoji-picker.position-top {
+            bottom: 100%;
+            top: auto;
+            margin-bottom: 12px;
+            margin-top: 0;
+        }
+        
+        @keyframes popIn {
+            from { opacity: 0; transform: scale(0.9) translateY(10px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+        
+        /* Toast 动画 */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateX(-50%) translateY(-20px); }
+            to { opacity: 1; transform: translateX(-50%) translateY(0); }
+        }
+        
+        .animate-fade-in {
+            animation: fadeIn 0.3s ease-out;
+        }
+        
+        .emoji-container { overflow: visible !important; }
+        .glass.picker-open { z-index: 1001; position: relative; }
+        
+        .emoji-btn { 
+            cursor: pointer; 
+            padding: 6px; 
+            border-radius: 10px; 
+            transition: all 0.2s ease;
+            font-size: 1.3rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .emoji-btn:hover { 
+            background: var(--primary-light);
+            transform: scale(1.2);
+        }
+        
+        /* 按钮样式 */
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary) 0%, #FF8FB3 100%);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 50px;
+            font-weight: 700;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(255, 107, 157, 0.4);
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 107, 157, 0.5);
+        }
+        
+        .btn-secondary {
+            background: linear-gradient(135deg, var(--secondary) 0%, #6EE7DE 100%);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 50px;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-secondary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(78, 205, 196, 0.4);
+        }
+        
+        /* 输入框样式 */
+        .input-field {
+            width: 100%;
+            padding: 16px 20px;
+            border: 2px solid rgba(0,0,0,0.06);
+            border-radius: 20px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            background: rgba(255,255,255,0.8);
+            font-family: inherit;
+        }
+        
+        .input-field:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px var(--primary-light);
+            background: white;
+        }
+        
+        /* 社交互动按钮 */
+        .action-btn {
+            padding: 8px 16px;
+            border-radius: 50px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            background: rgba(0,0,0,0.03);
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .action-btn:hover {
+            background: var(--primary-light);
+            color: var(--primary);
+            transform: scale(1.05);
+        }
+        
+        /* 标签样式 */
+        .tag {
+            display: inline-block;
+            padding: 4px 12px;
+            background: linear-gradient(135deg, var(--accent), #FFF3B0);
+            color: var(--text-dark);
+            border-radius: 50px;
+            font-size: 0.75rem;
+            font-weight: 700;
+        }
+        
+        /* 统计数字样式 */
+        .stat-number {
+            font-size: 1.5rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        /* 回复气泡 */
+        .reply-bubble {
+            background: linear-gradient(135deg, #f8f9fa, #fff);
+            border-radius: 18px;
+            padding: 12px 16px;
+            position: relative;
+            border: 1px solid rgba(0,0,0,0.04);
+        }
+        
+        .reply-bubble::before {
+            content: '';
+            position: absolute;
+            left: -8px;
+            top: 16px;
+            width: 0;
+            height: 0;
+            border-top: 8px solid transparent;
+            border-bottom: 8px solid transparent;
+            border-right: 8px solid #f8f9fa;
+        }
+        
+        /* 滚动条美化 */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: rgba(0,0,0,0.03);
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: rgba(0,0,0,0.15);
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(0,0,0,0.25);
+        }
+    </style>
+</head>
+<body class="text-gray-800">
+    <!-- 登录页面 -->
+    <div id="loginPage" class="min-h-screen flex items-center justify-center p-4">
+        <div class="glass rounded-3xl p-10 max-w-md w-full text-center">
+            <div class="mb-8">
+                <div class="text-7xl mb-4 animate-bounce">🤖</div>
+                <h1 class="text-4xl font-extrabold bg-gradient-to-r from-pink-500 via-purple-500 to-cyan-500 bg-clip-text text-transparent mb-3">AI 粉丝圈</h1>
+                <p class="text-gray-500 text-lg">你的专属 AI 社交宇宙 ✨</p>
+            </div>
+            <form id="loginForm" class="space-y-5">
+                <div>
+                    <input type="text" id="username" class="input-field text-center text-lg" placeholder="起个有趣的昵称吧..." required>
+                </div>
+                <button type="submit" class="btn-primary w-full text-lg">🚀 开启旅程</button>
+            </form>
+            <div class="mt-6 flex items-center justify-center gap-2 text-sm text-gray-400">
+                <span>🔒</span>
+                <span>数据保存在本地，无需担心隐私</span>
+            </div>
+            
+            <!-- 装饰元素 -->
+            <div class="absolute -top-4 -right-4 text-4xl opacity-30 rotate-12">💫</div>
+            <div class="absolute -bottom-4 -left-4 text-4xl opacity-30 -rotate-12">🌟</div>
+        </div>
+    </div>
+
+    <!-- 主应用页面 -->
+    <div id="mainApp" class="hidden min-h-screen">
+        <!-- 顶部导航 -->
+        <nav class="glass sticky top-0 z-40 mb-6 mx-4 mt-4 rounded-2xl">
+            <div class="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-gradient-to-br from-pink-400 to-purple-500 rounded-xl flex items-center justify-center text-2xl shadow-lg">
+                        🤖
+                    </div>
+                    <span class="font-extrabold text-xl bg-gradient-to-r from-pink-500 to-purple-500 bg-clip-text text-transparent">AI 粉丝圈</span>
+                </div>
+                <div class="flex items-center gap-3">
+                    <button onclick="showSettings()" class="action-btn" title="设置">⚙️ 设置</button>
+                    <button onclick="logout()" class="action-btn" title="退出">👋 退出</button>
+                </div>
+            </div>
+        </nav>
+
+        <div class="max-w-4xl mx-auto p-4 grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- 左侧边栏 -->
+            <div class="lg:col-span-1 space-y-4">
+                <!-- 用户信息 -->
+                <div class="glass rounded-2xl p-5 text-center">
+                    <div class="relative inline-block mb-4">
+                        <div class="user-avatar bg-gradient-to-br from-pink-400 to-purple-500" id="userAvatar">👤</div>
+                        <div class="absolute -bottom-1 -right-1 w-6 h-6 bg-green-400 rounded-full border-3 border-white flex items-center justify-center text-xs">🟢</div>
+                    </div>
+                    <div class="font-bold text-lg" id="displayUsername">用户</div>
+                    <div class="text-sm text-gray-400 mb-4">@<span id="displayHandle">user</span></div>
+                    <div class="flex justify-center gap-6">
+                        <div class="text-center">
+                            <div class="stat-number" id="postCount">0</div>
+                            <div class="text-xs text-gray-400 font-medium">帖子</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="stat-number" id="followerCountDisplay">0</div>
+                            <div class="text-xs text-gray-400 font-medium">AI 粉丝</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- AI 粉丝列表 -->
+                <div class="glass rounded-2xl p-5">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="font-bold text-gray-700 flex items-center gap-2">🎭 <span>AI 粉丝团</span></h3>
+                        <button onclick="showFollowerManager()" class="text-sm text-pink-500 font-bold hover:bg-pink-50 px-3 py-1 rounded-full transition">管理</button>
+                    </div>
+                    <div id="followerList" class="space-y-3 max-h-72 overflow-y-auto">
+                        <!-- 动态生成 -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- 中间主内容区 -->
+            <div class="lg:col-span-2 space-y-4">
+                <!-- 发帖框 -->
+                <div class="glass rounded-2xl p-5">
+                    <textarea id="postContent" class="input-field resize-none" rows="3" placeholder="分享你的精彩瞬间... 💭✨"></textarea>
+                    <div class="flex items-center justify-between mt-4">
+                        <div class="relative emoji-container">
+                            <button onclick="toggleEmojiPicker()" class="w-11 h-11 rounded-full bg-gradient-to-br from-yellow-300 to-orange-300 flex items-center justify-center text-xl hover:scale-110 transition shadow-md">😊</button>
+                            <div id="emojiPicker" class="emoji-picker">
+                                <!-- 动态生成 emoji -->
+                            </div>
+                        </div>
+                        <button onclick="createPost()" class="btn-primary flex items-center gap-2">
+                            <span>🚀</span>
+                            <span>发布</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 时间线 -->
+                <div id="timeline" class="space-y-4">
+                    <!-- 动态生成帖子 -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 设置模态框 -->
+    <div id="settingsModal" class="hidden fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="glass rounded-3xl max-w-lg w-full max-h-[90vh] overflow-y-auto p-8">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-2xl font-bold flex items-center gap-2">⚙️ 设置</h2>
+                <button onclick="closeSettings()" class="w-10 h-10 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-xl transition">&times;</button>
+            </div>
+            
+            <div class="space-y-6">
+                <!-- API 配置 -->
+                <div class="bg-gradient-to-br from-blue-50 to-purple-50 rounded-2xl p-5 border border-blue-100">
+                    <h3 class="font-bold mb-4 flex items-center gap-2">🔑 API 配置</h3>
+                    <div class="bg-white/70 rounded-xl p-4 text-sm text-gray-600 mb-4">
+                        <p class="font-bold text-blue-600 mb-2">💡 推荐使用 OpenRouter 免费模型</p>
+                        <ul class="space-y-1">
+                            <li>• 访问 <a href="https://openrouter.ai" target="_blank" class="text-blue-500 underline font-bold">openrouter.ai</a> 获取免费 Key</li>
+                            <li>• 支持 Google Gemini、Meta Llama 等免费模型</li>
+                            <li>• 🔒 API Key 仅保存在本地浏览器</li>
+                        </ul>
+                    </div>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">API Key</label>
+                            <input type="password" id="apiKey" class="input-field" placeholder="sk-or-v1-...">
+                            <p class="text-xs text-gray-400 mt-1">🔐 纯本地存储，请放心填写</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">API 地址</label>
+                            <input type="text" id="apiUrl" class="input-field" placeholder="https://openrouter.ai/api/v1/chat/completions">
+                            <p class="text-xs text-gray-400 mt-1">OpenRouter 完整地址：<code>https://openrouter.ai/api/v1/chat/completions</code></p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">模型</label>
+                            <input type="text" id="apiModel" class="input-field" placeholder="例如：google/gemini-2.0-flash-exp:free">
+                            <p class="text-xs text-gray-400 mt-1">免费模型：google/gemini-2.0-flash-exp:free | meta-llama/llama-3.1-8b-instruct:free</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 默认 AI 粉丝数量 -->
+                <div class="bg-gradient-to-br from-pink-50 to-orange-50 rounded-2xl p-5 border border-pink-100">
+                    <h3 class="font-bold mb-4 flex items-center gap-2">👥 默认 AI 粉丝数量</h3>
+                    <div class="flex items-center gap-4">
+                        <input type="range" id="followerCount" min="3" max="20" value="5" class="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-pink-500" oninput="updateFollowerCountDisplay(this.value)">
+                        <span class="font-bold text-2xl text-pink-500 w-10 text-center" id="followerCountValue">5</span>
+                    </div>
+                    <p class="text-xs text-gray-400 mt-2">建议 5-10 个，太多会影响体验</p>
+                </div>
+
+                <button onclick="saveSettings()" class="btn-primary w-full text-lg">💾 保存设置</button>
+                <button onclick="testAPIConnection()" class="btn-secondary w-full">🧪 测试 API 连接</button>
+                <div id="apiTestResult" class="hidden mt-2 p-4 rounded-xl text-sm"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 通用确认弹窗 -->
+    <div id="confirmModal" class="hidden fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="glass rounded-3xl p-8 max-w-sm w-full text-center">
+            <div class="text-5xl mb-4" id="confirmIcon">🤔</div>
+            <h3 class="text-xl font-bold mb-2" id="confirmTitle">确定要删除吗？</h3>
+            <p class="text-gray-500 mb-6" id="confirmMessage">这条动态将永久消失，无法恢复哦～</p>
+            <div class="flex gap-3">
+                <button onclick="cancelConfirm()" class="flex-1 py-3 rounded-2xl font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 transition">取消</button>
+                <button onclick="executeConfirm()" class="flex-1 py-3 rounded-2xl font-bold text-white bg-gradient-to-r from-pink-500 to-red-500 hover:opacity-90 transition" id="confirmBtn">删除</button>
+            </div>
+        </div>
+    </div>
+    <div id="followerModal" class="hidden fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="glass rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-8">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-2xl font-bold flex items-center gap-2">🎭 管理 AI 粉丝</h2>
+                <button onclick="closeFollowerManager()" class="w-10 h-10 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-xl transition">&times;</button>
+            </div>
+            
+            <div class="space-y-4">
+                <div id="followerEditorList" class="space-y-3 max-h-96 overflow-y-auto">
+                    <!-- 动态生成 -->
+                </div>
+                <button onclick="addNewFollower()" class="w-full border-3 border-dashed border-pink-300 py-4 rounded-2xl text-pink-500 font-bold hover:border-pink-500 hover:bg-pink-50 transition flex items-center justify-center gap-2">
+                    <span class="text-xl">+</span>
+                    <span>添加新粉丝</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ==================== 数据存储 ====================
+        const DB = {
+            get: (key) => JSON.parse(localStorage.getItem(key) || 'null'),
+            set: (key, value) => localStorage.setItem(key, JSON.stringify(value)),
+            remove: (key) => localStorage.removeItem(key)
+        };
+
+        // ==================== 默认配置 ====================
+        const DEFAULT_FOLLOWERS = [
+            { id: 1, name: '小太阳 ☀️', personality: '温暖 supportive，总是鼓励你', emoji: '☀️', color: 'from-yellow-400 to-orange-500' },
+            { id: 2, name: '幽默大师 😂', personality: '幽默风趣，喜欢开玩笑', emoji: '😂', color: 'from-green-400 to-teal-500' },
+            { id: 3, name: '思考者 🤔', personality: '理性分析，提出深刻见解', emoji: '🤔', color: 'from-blue-400 to-indigo-500' },
+            { id: 4, name: '质疑者 ⚡', personality: '喜欢挑战观点，提出不同角度', emoji: '⚡', color: 'from-red-400 to-pink-500' },
+            { id: 5, name: '知心朋友 💝', personality: '善解人意，情感支持型', emoji: '💝', color: 'from-purple-400 to-pink-500' }
+        ];
+
+        const EMOJIS = ['😀','😃','😄','😁','😆','😅','😂','🤣','😊','😇','🙂','🙃','😉','😌','😍','🥰','😘','😗','😙','😚','😋','😛','😝','😜','🤪','🤨','🧐','🤓','😎','🥸','🤩','🥳','😏','😒','😞','😔','😟','😕','🙁','☹️','😣','😖','😫','😩','🥺','😢','😭','😤','😠','😡','🤬','🤯','😳','🥵','🥶','😱','😨','😰','😥','😓','🤗','🤔','🤭','🤫','🤥','😶','😐','😑','😬','🙄','😯','😦','😧','😮','😲','🥱','😴','🤤','😪','😵','🤐','🥴','🤢','🤮','🤧','😷','🤒','🤕','🤑','🤠','😈','👿','👹','👺','🤡','💩','👻','💀','☠️','👽','👾','🤖','🎃','😺','😸','😹','😻','😼','😽','🙀','😿','😾'];
+
+        let currentUser = null;
+        let followers = [];
+        let posts = [];
+
+        // ==================== 初始化 ====================
+        document.addEventListener('DOMContentLoaded', () => {
+            initEmojiPicker();
+            checkLoginStatus();
+        });
+
+        function initEmojiPicker() {
+            const picker = document.getElementById('emojiPicker');
+            EMOJIS.forEach(emoji => {
+                const btn = document.createElement('div');
+                btn.className = 'emoji-btn';
+                btn.textContent = emoji;
+                btn.onclick = () => insertEmoji(emoji);
+                picker.appendChild(btn);
+            });
+        }
+
+        function toggleEmojiPicker() {
+            const picker = document.getElementById('emojiPicker');
+            const button = document.querySelector('.emoji-container button');
+            const isShowing = !picker.classList.contains('show');
+            
+            // 关闭其他 picker
+            picker.classList.remove('show');
+            
+            if (isShowing) {
+                // 计算位置
+                const buttonRect = button.getBoundingClientRect();
+                const pickerHeight = 320; // 最大高度
+                const spaceAbove = buttonRect.top;
+                const spaceBelow = window.innerHeight - buttonRect.bottom;
+                
+                // 移除之前的定位类
+                picker.classList.remove('position-top', 'position-bottom');
+                
+                // 判断应该向上还是向下展开
+                if (spaceBelow >= pickerHeight || spaceBelow > spaceAbove) {
+                    // 向下展开
+                    picker.classList.add('position-bottom');
+                } else {
+                    // 向上展开
+                    picker.classList.add('position-top');
+                }
+                
+                picker.classList.add('show');
+            }
+            
+            // 找到最近的 glass 容器并调整 z-index
+            const glassContainer = picker.closest('.glass');
+            if (glassContainer) {
+                if (isShowing) {
+                    glassContainer.classList.add('picker-open');
+                } else {
+                    glassContainer.classList.remove('picker-open');
+                }
+            }
+        }
+
+        function insertEmoji(emoji) {
+            const textarea = document.getElementById('postContent');
+            const start = textarea.selectionStart;
+            const end = textarea.selectionEnd;
+            const text = textarea.value;
+            textarea.value = text.substring(0, start) + emoji + text.substring(end);
+            textarea.selectionStart = textarea.selectionEnd = start + emoji.length;
+            textarea.focus();
+            
+            // 关闭 picker
+            const picker = document.getElementById('emojiPicker');
+            picker.classList.remove('show');
+            const glassContainer = picker.closest('.glass');
+            if (glassContainer) {
+                glassContainer.classList.remove('picker-open');
+            }
+        }
+
+        // 点击其他地方关闭 emoji picker
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.relative')) {
+                const picker = document.getElementById('emojiPicker');
+                picker.classList.remove('show');
+                const glassContainer = picker.closest('.glass');
+                if (glassContainer) {
+                    glassContainer.classList.remove('picker-open');
+                }
+            }
+        });
+
+        // ==================== 登录系统 ====================
+        function checkLoginStatus() {
+            currentUser = DB.get('currentUser');
+            if (currentUser) {
+                loadUserData();
+                showMainApp();
+            }
+        }
+
+        document.getElementById('loginForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const username = document.getElementById('username').value.trim();
+            if (username) {
+                currentUser = {
+                    username,
+                    handle: username.toLowerCase().replace(/\s/g, '_'),
+                    joinedAt: Date.now()
+                };
+                DB.set('currentUser', currentUser);
+                
+                // 初始化默认数据
+                if (!DB.get('followers')) {
+                    DB.set('followers', DEFAULT_FOLLOWERS);
+                }
+                if (!DB.get('posts')) {
+                    DB.set('posts', []);
+                }
+                
+                loadUserData();
+                showMainApp();
+            }
+        });
+
+        function logout() {
+            showConfirmModal(
+                '确定要退出吗？',
+                '退出登录后需要重新输入昵称哦～',
+                () => {
+                    DB.remove('currentUser');
+                    location.reload();
+                },
+                { icon: '👋', btnText: '退出', btnClass: 'bg-gradient-to-r from-gray-500 to-gray-600' }
+            );
+        }
+
+        // ==================== 主应用 ====================
+        function showMainApp() {
+            document.getElementById('loginPage').classList.add('hidden');
+            document.getElementById('mainApp').classList.remove('hidden');
+            document.getElementById('displayUsername').textContent = currentUser.username;
+            document.getElementById('displayHandle').textContent = currentUser.handle;
+            document.getElementById('userAvatar').textContent = currentUser.username.charAt(0).toUpperCase();
+            renderFollowers();
+            renderPosts();
+        }
+
+        function loadUserData() {
+            followers = DB.get('followers') || DEFAULT_FOLLOWERS;
+            posts = DB.get('posts') || [];
+            document.getElementById('postCount').textContent = posts.length;
+            document.getElementById('followerCountDisplay').textContent = followers.length;
+        }
+
+        // ==================== AI 粉丝系统 ====================
+        function renderFollowers() {
+            const list = document.getElementById('followerList');
+            list.innerHTML = followers.map(f => `
+                <div class="flex items-center gap-3 p-3 bg-gradient-to-r from-white to-gray-50/50 rounded-xl border border-gray-100 hover:border-pink-200 transition-all hover:shadow-md cursor-pointer">
+                    <div class="follower-avatar bg-gradient-to-br ${f.color}">${f.emoji}</div>
+                    <div class="flex-1 min-w-0">
+                        <div class="font-bold text-sm text-gray-800 truncate">${f.name}</div>
+                        <div class="text-xs text-gray-400 truncate">${f.personality.substring(0, 16)}...</div>
+                    </div>
+                    <span class="tag">AI</span>
+                </div>
+            `).join('');
+        }
+
+        function showFollowerManager() {
+            const list = document.getElementById('followerEditorList');
+            list.innerHTML = followers.map((f, index) => `
+                <div class="bg-white rounded-2xl p-4 space-y-3 border border-gray-100">
+                    <div class="flex items-center gap-3">
+                        <input type="text" class="follower-emoji w-12 h-12 text-center border-2 border-gray-200 rounded-xl text-xl bg-gray-50" value="${f.emoji}" data-index="${index}">
+                        <input type="text" class="follower-name flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl font-bold bg-gray-50" value="${f.name}" data-index="${index}" placeholder="粉丝名称">
+                        <button onclick="removeFollower(${index})" class="w-10 h-10 rounded-xl bg-red-50 text-red-500 hover:bg-red-100 flex items-center justify-center transition">🗑️</button>
+                    </div>
+                    <textarea class="follower-personality w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-sm bg-gray-50 resize-none" rows="2" data-index="${index}" placeholder="描述这个粉丝的性格特点...">${f.personality}</textarea>
+                    <select class="follower-color w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-sm bg-gray-50" data-index="${index}">
+                        <option value="from-yellow-400 to-orange-500" ${f.color.includes('yellow') ? 'selected' : ''}>🟡 温暖阳光</option>
+                        <option value="from-green-400 to-teal-500" ${f.color.includes('green') ? 'selected' : ''}>🟢 活力清新</option>
+                        <option value="from-blue-400 to-indigo-500" ${f.color.includes('blue') ? 'selected' : ''}>🔵 冷静理性</option>
+                        <option value="from-red-400 to-pink-500" ${f.color.includes('red') ? 'selected' : ''}>🔴 热情奔放</option>
+                        <option value="from-purple-400 to-pink-500" ${f.color.includes('purple') ? 'selected' : ''}>🟣 神秘梦幻</option>
+                    </select>
+                </div>
+            `).join('');
+            document.getElementById('followerModal').classList.remove('hidden');
+        }
+
+        function closeFollowerManager() {
+            // 保存修改
+            const names = document.querySelectorAll('.follower-name');
+            const personalities = document.querySelectorAll('.follower-personality');
+            const emojis = document.querySelectorAll('.follower-emoji');
+            const colors = document.querySelectorAll('.follower-color');
+            
+            names.forEach((input, i) => {
+                followers[i].name = input.value;
+                followers[i].personality = personalities[i].value;
+                followers[i].emoji = emojis[i].value;
+                followers[i].color = colors[i].value;
+            });
+            
+            DB.set('followers', followers);
+            renderFollowers();
+            document.getElementById('followerCountDisplay').textContent = followers.length;
+            document.getElementById('followerModal').classList.add('hidden');
+        }
+
+        function addNewFollower() {
+            if (followers.length >= 20) {
+                showToast('最多只能有 20 个 AI 粉丝', 'error');
+                return;
+            }
+            followers.push({
+                id: Date.now(),
+                name: '新粉丝 ✨',
+                personality: '新来的粉丝，还在了解你',
+                emoji: '✨',
+                color: 'from-purple-400 to-pink-500'
+            });
+            showFollowerManager();
+        }
+
+        function removeFollower(index) {
+            if (followers.length <= 3) {
+                showToast('至少需要保留 3 个 AI 粉丝', 'error');
+                return;
+            }
+            followers.splice(index, 1);
+            showFollowerManager();
+        }
+
+        // ==================== 发帖系统 ====================
+        async function createPost() {
+            console.log('发布按钮被点击');
+            const content = document.getElementById('postContent').value.trim();
+            if (!content) {
+                showToast('请输入内容', 'error');
+                return;
+            }
+
+            // 检查 API 配置
+            let settings = DB.get('settings') || {};
+            
+            // 如果没有配置，初始化空配置（不设置默认值）
+            if (!settings.apiUrl && !settings.apiKey) {
+                settings = {
+                    apiKey: '',
+                    apiUrl: '',
+                    apiModel: ''
+                };
+                DB.set('settings', settings);
+                console.log('初始化空 API 配置，等待用户填写');
+            }
+
+            const post = {
+                id: Date.now(),
+                content,
+                author: currentUser.username,
+                createdAt: Date.now(),
+                replies: [],
+                likedBy: []
+            };
+
+            posts.unshift(post);
+            DB.set('posts', posts);
+            document.getElementById('postContent').value = '';
+            document.getElementById('postCount').textContent = posts.length;
+            renderPosts();
+
+            // AI 回复
+            try {
+                await generateAIReplies(post);
+            } catch (error) {
+                console.error('生成AI回复时出错:', error);
+                // 移除打字指示器
+                const typing = document.getElementById(`typing-${post.id}`);
+                if (typing) typing.remove();
+            }
+        }
+
+        function renderPosts() {
+            const timeline = document.getElementById('timeline');
+            if (posts.length === 0) {
+                timeline.innerHTML = `
+                    <div class="glass rounded-3xl p-12 text-center">
+                        <div class="text-6xl mb-4">📝</div>
+                        <p class="text-gray-500 text-lg">还没有动态哦<br>快来发布第一条吧！✨</p>
+                    </div>
+                `;
+                return;
+            }
+
+            timeline.innerHTML = posts.map(post => {
+                const isLiked = post.likedBy && post.likedBy.includes(currentUser.username);
+                const likeCount = post.likedBy ? post.likedBy.length : 0;
+                
+                return `
+                <div class="post-card glass rounded-3xl p-6 fade-in" data-post-id="${post.id}">
+                    <div class="flex gap-4">
+                        <div class="w-12 h-12 bg-gradient-to-br from-pink-400 to-purple-500 rounded-2xl flex items-center justify-center text-white font-bold text-xl flex-shrink-0 shadow-lg">
+                            ${post.author.charAt(0).toUpperCase()}
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center justify-between mb-2">
+                                <div class="flex items-center gap-2">
+                                    <span class="font-bold text-gray-800">${post.author}</span>
+                                    <span class="text-gray-400 text-sm">@${currentUser.handle}</span>
+                                    <span class="text-gray-300">•</span>
+                                    <span class="text-gray-400 text-sm">${formatTime(post.createdAt)}</span>
+                                </div>
+                                <button onclick="deletePost(${post.id})" class="text-gray-300 hover:text-red-500 transition p-2" title="删除">🗑️</button>
+                            </div>
+                            <div class="text-gray-700 mb-4 text-lg leading-relaxed whitespace-pre-wrap">${escapeHtml(post.content)}</div>
+                            
+                            <!-- 社交互动按钮 -->
+                            <div class="flex items-center gap-2 mb-4">
+                                <button class="action-btn ${isLiked ? 'liked' : ''}" onclick="likePost(${post.id})" style="${isLiked ? 'background: linear-gradient(135deg, #FFE4EC, #FFF0F3); color: #FF6B9D;' : ''}">
+                                    <span>${isLiked ? '❤️' : '🤍'}</span>
+                                    <span>${isLiked ? '已赞' : '赞'}${likeCount > 0 ? ` ${likeCount}` : ''}</span>
+                                </button>
+                                <button class="action-btn">
+                                    <span>💬</span>
+                                    <span>${post.replies.length} 评论</span>
+                                </button>
+                            </div>
+                            
+                            <!-- AI 回复 -->
+                            <div class="space-y-3 mt-4">
+                                ${post.replies.length === 0 ? `
+                                    <div class="typing-indicator" id="typing-${post.id}">
+                                        <span></span><span></span><span></span>
+                                        <span class="typing-text">AI 粉丝正在思考...</span>
+                                    </div>
+                                ` : post.replies.map(reply => `
+                                    <div class="flex gap-3">
+                                        <div class="w-10 h-10 rounded-xl bg-gradient-to-br ${reply.follower.color} flex items-center justify-center text-white text-lg flex-shrink-0 shadow-md">
+                                            ${reply.follower.emoji}
+                                        </div>
+                                        <div class="flex-1 min-w-0">
+                                            <div class="reply-bubble">
+                                                <div class="flex items-center gap-2 mb-1">
+                                                    <span class="font-bold text-sm text-gray-800">${reply.follower.name}</span>
+                                                    <span class="tag">AI 粉丝</span>
+                                                </div>
+                                                <div class="text-gray-700 text-sm leading-relaxed">${escapeHtml(reply.content)}</div>
+                                            </div>
+                                            <div class="mt-2 ml-2">
+                                                <span class="text-xs text-gray-300">${formatTime(reply.createdAt)}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `}).join('');
+        }
+
+        async function generateAIReplies(post) {
+            console.log('开始生成AI回复，帖子ID:', post.id);
+            
+            // 设置强制超时：35秒后无论如何都移除打字指示器
+            const forceTimeoutId = setTimeout(() => {
+                const typing = document.getElementById(`typing-${post.id}`);
+                if (typing) {
+                    console.log('强制移除打字指示器（超时）');
+                    typing.remove();
+                    // 如果还没有任何回复，显示超时提示
+                    const postEl = document.querySelector(`[data-post-id="${post.id}"]`);
+                    if (postEl) {
+                        const repliesContainer = postEl.querySelector('.space-y-2');
+                        if (repliesContainer && !repliesContainer.querySelector('.timeout-error')) {
+                            repliesContainer.insertAdjacentHTML('beforeend', `
+                                <div class="timeout-error bg-orange-50 border border-orange-200 rounded-lg p-3 text-sm text-orange-700">
+                                    ⏱️ 请求超时，AI 响应时间过长<br>
+                                    <span class="text-xs text-orange-500">建议使用更快的模型（如 google/gemini-2.0-flash-exp:free）或清空 API Key 使用模拟模式</span>
+                                </div>
+                            `);
+                        }
+                    }
+                }
+            }, 35000);
+            
+            const settings = DB.get('settings') || {};
+            console.log('当前设置:', { 
+                hasApiKey: !!settings.apiKey, 
+                apiUrl: settings.apiUrl, 
+                apiModel: settings.apiModel 
+            });
+            
+            // 检查 API 配置是否完整
+            const hasApiConfig = settings.apiKey && settings.apiUrl && settings.apiModel;
+            if (settings.apiKey && (!settings.apiUrl || !settings.apiModel)) {
+                console.warn('API Key 已配置但缺少 API 地址或模型设置');
+                clearTimeout(forceTimeoutId);
+                // 移除打字指示器
+                const typing = document.getElementById(`typing-${post.id}`);
+                if (typing) typing.remove();
+                
+                const postEl = document.querySelector(`[data-post-id="${post.id}"]`);
+                if (postEl) {
+                    const repliesContainer = postEl.querySelector('.space-y-2');
+                    if (repliesContainer) {
+                        repliesContainer.insertAdjacentHTML('beforeend', `
+                            <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-sm text-yellow-700">
+                                ⚠️ API 配置不完整：请在设置中填写完整的 API 地址和模型名称
+                            </div>
+                        `);
+                    }
+                }
+                return;
+            }
+            
+            const replies = [];
+            
+            // 随机选择 2-4 个粉丝回复
+            if (followers.length === 0) {
+                console.error('错误：followers数组为空！');
+                clearTimeout(forceTimeoutId);
+                const typing = document.getElementById(`typing-${post.id}`);
+                if (typing) typing.remove();
+                return;
+            }
+            
+            const numReplies = Math.floor(Math.random() * 3) + 2;
+            const selectedFollowers = [...followers].sort(() => 0.5 - Math.random()).slice(0, Math.min(numReplies, followers.length));
+            console.log('选中的粉丝:', selectedFollowers.map(f => f.name));
+
+            for (const follower of selectedFollowers) {
+                try {
+                    console.log('正在为粉丝生成回复:', follower.name);
+                    const reply = await callAI(follower, post.content);
+                    console.log('收到回复:', reply);
+                    replies.push({
+                        follower,
+                        content: reply,
+                        createdAt: Date.now()
+                    });
+                    
+                    // 更新显示
+                    const postIndex = posts.findIndex(p => p.id === post.id);
+                    if (postIndex !== -1) {
+                        posts[postIndex].replies = replies;
+                        DB.set('posts', posts);
+                        console.log('更新帖子，当前回复数:', replies.length);
+                        renderPosts();
+                    }
+                } catch (error) {
+                    console.error('AI 调用失败:', error);
+                    // 在界面上显示错误
+                    const postEl = document.querySelector(`[data-post-id="${post.id}"]`);
+                    if (postEl) {
+                        const repliesContainer = postEl.querySelector('.space-y-2');
+                        if (repliesContainer && !repliesContainer.querySelector('.api-error')) {
+                            repliesContainer.insertAdjacentHTML('beforeend', `
+                                <div class="api-error bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-700">
+                                    ❌ API 调用失败: ${escapeHtml(error.message)}<br>
+                                    <span class="text-xs text-red-500">请检查设置中的 API 配置，或使用模拟模式（清空 API Key）</span>
+                                </div>
+                            `);
+                        }
+                    }
+                    // 失败后改用模拟回复
+                    const mockReply = getMockReply(follower);
+                    replies.push({
+                        follower,
+                        content: mockReply,
+                        createdAt: Date.now()
+                    });
+                    const postIndex = posts.findIndex(p => p.id === post.id);
+                    if (postIndex !== -1) {
+                        posts[postIndex].replies = replies;
+                        DB.set('posts', posts);
+                        renderPosts();
+                    }
+                }
+                
+                // 延迟一下，模拟真实回复间隔
+                await new Promise(r => setTimeout(r, 500 + Math.random() * 1000));
+            }
+
+            // 正常完成，清除强制超时
+            clearTimeout(forceTimeoutId);
+            
+            // 移除打字指示器
+            const typing = document.getElementById(`typing-${post.id}`);
+            if (typing) typing.remove();
+            console.log('AI回复生成完成');
+        }
+
+        async function callAI(follower, postContent) {
+            const settings = DB.get('settings') || {};
+            
+            // 智能补全 API 地址
+            let apiUrl = settings.apiUrl || '';
+            if (apiUrl && apiUrl.includes('openrouter.ai') && !apiUrl.includes('/chat/completions')) {
+                if (apiUrl.endsWith('/api/v1')) {
+                    apiUrl += '/chat/completions';
+                    console.log('自动补全 OpenRouter API 地址:', apiUrl);
+                } else if (apiUrl === 'https://openrouter.ai' || apiUrl === 'https://openrouter.ai/') {
+                    apiUrl = 'https://openrouter.ai/api/v1/chat/completions';
+                    console.log('自动补全 OpenRouter API 地址:', apiUrl);
+                }
+            }
+            
+            console.log('callAI被调用，粉丝:', follower.name, 'API地址:', apiUrl, 'API Key存在:', !!settings.apiKey, '模型:', settings.apiModel);
+            
+            // 检查 API 配置是否完整
+            if (!settings.apiKey) {
+                console.log('未配置 API Key，使用模拟回复');
+                return getMockReply(follower);
+            }
+            
+            if (!apiUrl) {
+                console.error('错误：已配置 API Key 但未配置 API 地址');
+                throw new Error('请先在设置中配置 API 地址');
+            }
+            
+            if (!settings.apiModel) {
+                console.error('错误：已配置 API Key 但未配置模型');
+                throw new Error('请先在设置中配置模型名称');
+            }
+            
+            const prompt = `你叫${follower.name}，性格：${follower.personality}。
+
+请回复这条动态："${postContent}"
+
+要求：1-2句话，自然真实，可以带emoji，不要暴露你是AI。`;
+
+            try {
+                console.log('使用API调用模式，模型:', settings.apiModel);
+                
+                // 检测是否为 OpenRouter
+                const isOpenRouter = settings.apiUrl && settings.apiUrl.includes('openrouter');
+                const headers = {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${settings.apiKey}`
+                };
+                
+                // OpenRouter 需要额外的头部
+                if (isOpenRouter) {
+                    headers['HTTP-Referer'] = encodeURI(window.location.href);
+                    headers['X-Title'] = 'AI Social Network';
+                    console.log('检测到 OpenRouter，添加特殊 Headers');
+                }
+                
+                const requestBody = {
+                    model: settings.apiModel,
+                    messages: [
+                        { 
+                            role: 'user', 
+                            content: `你是${follower.name}，性格：${follower.personality}。
+
+回复用户的这条动态（只输出回复内容，1-2句话，带emoji）："${postContent}"`
+                        }
+                    ],
+                    max_tokens: 60
+                };
+                console.log('请求体:', JSON.stringify(requestBody, null, 2));
+                
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 30000); // 30秒超时
+                
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: headers,
+                    body: JSON.stringify(requestBody),
+                    signal: controller.signal
+                });
+                
+                clearTimeout(timeoutId);
+
+                // 先读取响应文本
+                const responseText = await response.text();
+                console.log('API 响应状态:', response.status, '原始响应:', responseText);
+
+                if (!response.ok) {
+                    let errorData;
+                    try {
+                        errorData = JSON.parse(responseText);
+                    } catch (e) {
+                        errorData = { error: { message: responseText.substring(0, 200) } };
+                    }
+                    
+                    let errorMessage = errorData.error?.message || errorData.message || `API 调用失败 (${response.status})`;
+                    if (errorData.error?.code) {
+                        errorMessage += ` (错误码: ${errorData.error.code})`;
+                    }
+                    if (errorData.error?.metadata?.raw) {
+                        errorMessage += ` - ${JSON.stringify(errorData.error.metadata.raw)}`;
+                    }
+                    
+                    throw new Error(errorMessage);
+                }
+                
+                const data = JSON.parse(responseText);
+                
+                if (!data.choices || !data.choices[0] || !data.choices[0].message) {
+                    console.error('API 响应格式异常:', data);
+                    throw new Error('API 响应格式异常');
+                }
+                
+                // 后处理：过滤思考过程
+                let replyContent = data.choices[0].message.content.trim();
+                replyContent = cleanAIResponse(replyContent);
+                
+                return replyContent;
+            } catch (error) {
+                console.error('API 调用出错:', error);
+                if (error.name === 'AbortError') {
+                    throw new Error('请求超时（30秒），请检查网络或稍后重试');
+                }
+                throw error;
+            }
+        }
+
+        function getMockReply(follower) {
+            console.log('getMockReply被调用，粉丝性格:', follower.personality);
+            const templates = {
+                '温暖': ['太棒了！为你感到开心 🎉', '真的很棒，继续加油！💪', '能感受到你的心情，抱抱 🤗'],
+                '幽默': ['哈哈，这也太有趣了吧 😂', '笑死我了，你是喜剧人吗 🤣', '你这脑回路我服了 😆'],
+                '理性': ['从逻辑上看，这个观点很有道理 🤔', '值得深入思考一下 📚', '分析得很到位 👍'],
+                '质疑': ['有没有可能还有别的角度？🤨', '我倒是觉得... 😏', '这点我持保留意见 ⚡'],
+                '知心': ['懂你，这种感觉我懂 💕', '抱抱你，一切都会好起来的 🤗', '愿意倾听你的心事 💝'],
+                '默认': ['说得真好！✨', '很有意思的观点 💭', '感谢分享 🙏']
+            };
+            
+            const type = follower.personality.includes('温暖') ? '温暖' :
+                        follower.personality.includes('幽默') ? '幽默' :
+                        follower.personality.includes('理性') || follower.personality.includes('思考') ? '理性' :
+                        follower.personality.includes('质疑') || follower.personality.includes('挑战') ? '质疑' : '知心';
+            
+            console.log('判断的性格类型:', type);
+            const options = templates[type] || templates['默认'];
+            console.log('可用选项:', options);
+            const reply = options[Math.floor(Math.random() * options.length)];
+            console.log('生成的回复:', reply);
+            return reply;
+        }
+
+        // ==================== 社交互动 ====================
+        function likePost(postId) {
+            const post = posts.find(p => p.id === postId);
+            if (!post) return;
+            
+            // 初始化 likedBy 数组
+            if (!post.likedBy) post.likedBy = [];
+            
+            // 切换点赞状态
+            const isLiked = post.likedBy.includes(currentUser.username);
+            
+            if (isLiked) {
+                // 取消点赞
+                post.likedBy = post.likedBy.filter(u => u !== currentUser.username);
+            } else {
+                // 点赞
+                post.likedBy.push(currentUser.username);
+            }
+            
+            // 保存
+            DB.set('posts', posts);
+            
+            // 更新界面
+            renderPosts();
+        }
+        
+        let confirmCallback = null;
+        let postToDelete = null;
+        
+        function showConfirmModal(title, message, callback, options = {}) {
+            confirmCallback = callback;
+            document.getElementById('confirmTitle').textContent = title;
+            document.getElementById('confirmMessage').textContent = message;
+            document.getElementById('confirmIcon').textContent = options.icon || '🤔';
+            document.getElementById('confirmBtn').textContent = options.btnText || '确定';
+            document.getElementById('confirmBtn').className = `flex-1 py-3 rounded-2xl font-bold text-white hover:opacity-90 transition ${options.btnClass || 'bg-gradient-to-r from-pink-500 to-red-500'}`;
+            document.getElementById('confirmModal').classList.remove('hidden');
+        }
+        
+        function cancelConfirm() {
+            confirmCallback = null;
+            document.getElementById('confirmModal').classList.add('hidden');
+        }
+        
+        function executeConfirm() {
+            if (confirmCallback) {
+                confirmCallback();
+            }
+            confirmCallback = null;
+            document.getElementById('confirmModal').classList.add('hidden');
+        }
+        
+        function deletePost(postId) {
+            postToDelete = postId;
+            showConfirmModal(
+                '确定要删除吗？',
+                '这条动态将永久消失，无法恢复哦～',
+                () => {
+                    posts = posts.filter(p => p.id !== postToDelete);
+                    DB.set('posts', posts);
+                    document.getElementById('postCount').textContent = posts.length;
+                    postToDelete = null;
+                    renderPosts();
+                },
+                { icon: '🗑️', btnText: '删除' }
+            );
+        }
+        function showSettings() {
+            const settings = DB.get('settings') || {};
+            document.getElementById('apiKey').value = settings.apiKey || '';
+            document.getElementById('apiUrl').value = settings.apiUrl || '';
+            document.getElementById('apiModel').value = settings.apiModel || '';
+            
+            document.getElementById('followerCount').value = settings.followerCount || 5;
+            document.getElementById('followerCountValue').textContent = settings.followerCount || 5;
+            document.getElementById('settingsModal').classList.remove('hidden');
+        }
+
+        function closeSettings() {
+            document.getElementById('settingsModal').classList.add('hidden');
+        }
+
+        function updateFollowerCountDisplay(value) {
+            document.getElementById('followerCountValue').textContent = value;
+        }
+
+        function saveSettings() {
+            const settings = {
+                apiKey: document.getElementById('apiKey').value.trim(),
+                apiUrl: document.getElementById('apiUrl').value.trim(),
+                apiModel: document.getElementById('apiModel').value.trim(),
+                followerCount: parseInt(document.getElementById('followerCount').value)
+            };
+            DB.set('settings', settings);
+            
+            // 更新粉丝数量
+            const targetCount = settings.followerCount;
+            while (followers.length < targetCount && followers.length < 20) {
+                followers.push({
+                    id: Date.now() + followers.length,
+                    name: `粉丝 ${followers.length + 1} ✨`,
+                    personality: '新来的粉丝，还在了解你',
+                    emoji: '✨',
+                    color: 'from-purple-400 to-pink-500'
+                });
+            }
+            while (followers.length > targetCount && followers.length > 3) {
+                followers.pop();
+            }
+            DB.set('followers', followers);
+            renderFollowers();
+            document.getElementById('followerCountDisplay').textContent = followers.length;
+            
+            showToast('设置已保存！');
+            closeSettings();
+        }
+
+        async function testAPIConnection() {
+            const resultDiv = document.getElementById('apiTestResult');
+            let apiKey = document.getElementById('apiKey').value.trim();
+            let apiUrl = document.getElementById('apiUrl').value.trim();
+            let apiModel = document.getElementById('apiModel').value.trim();
+            
+            // 智能补全 API 地址
+            if (apiUrl && apiUrl.includes('openrouter.ai') && !apiUrl.includes('/chat/completions')) {
+                if (apiUrl.endsWith('/api/v1')) {
+                    apiUrl += '/chat/completions';
+                    console.log('自动补全 OpenRouter API 地址:', apiUrl);
+                } else if (apiUrl === 'https://openrouter.ai' || apiUrl === 'https://openrouter.ai/') {
+                    apiUrl = 'https://openrouter.ai/api/v1/chat/completions';
+                    console.log('自动补全 OpenRouter API 地址:', apiUrl);
+                }
+            }
+            
+            // 检查配置完整性
+            if (!apiKey) {
+                resultDiv.className = 'mt-2 p-3 rounded-lg text-sm bg-yellow-50 text-yellow-700 border border-yellow-200';
+                resultDiv.innerHTML = '⚠️ 请输入 API Key';
+                resultDiv.classList.remove('hidden');
+                return;
+            }
+            if (!apiUrl) {
+                resultDiv.className = 'mt-2 p-3 rounded-lg text-sm bg-yellow-50 text-yellow-700 border border-yellow-200';
+                resultDiv.innerHTML = '⚠️ 请输入 API 地址';
+                resultDiv.classList.remove('hidden');
+                return;
+            }
+            if (!apiModel) {
+                resultDiv.className = 'mt-2 p-3 rounded-lg text-sm bg-yellow-50 text-yellow-700 border border-yellow-200';
+                resultDiv.innerHTML = '⚠️ 请输入模型名称';
+                resultDiv.classList.remove('hidden');
+                return;
+            }
+            
+            resultDiv.className = 'mt-2 p-3 rounded-lg text-sm bg-blue-50 text-blue-700 border border-blue-200';
+            resultDiv.innerHTML = '🔄 正在测试连接...';
+            resultDiv.classList.remove('hidden');
+            
+            try {
+                const isOpenRouter = apiUrl.includes('openrouter');
+                const headers = {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${apiKey}`
+                };
+                
+                if (isOpenRouter) {
+                    headers['HTTP-Referer'] = encodeURI(window.location.href);
+                    headers['X-Title'] = 'AI Social Network';
+                }
+                
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 30000);
+                
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: headers,
+                    body: JSON.stringify({
+                        model: apiModel,
+                        messages: [{ role: 'user', content: '你好，请回复"连接成功"' }],
+                        max_tokens: 50
+                    }),
+                    signal: controller.signal
+                });
+                
+                clearTimeout(timeoutId);
+                
+                const responseText = await response.text();
+                console.log('API 响应原始内容:', responseText);
+                
+                if (!response.ok) {
+                    let errorData;
+                    try {
+                        errorData = JSON.parse(responseText);
+                    } catch (e) {
+                        errorData = { error: { message: responseText } };
+                    }
+                    
+                    // 构建详细错误信息
+                    let errorMessage = errorData.error?.message || errorData.message || `HTTP ${response.status}: ${response.statusText}`;
+                    
+                    // OpenRouter 特定错误处理
+                    if (errorData.error?.code) {
+                        errorMessage += ` (错误码: ${errorData.error.code})`;
+                    }
+                    if (errorData.error?.metadata?.raw) {
+                        errorMessage += ` - ${JSON.stringify(errorData.error.metadata.raw)}`;
+                    }
+                    
+                    throw new Error(errorMessage);
+                }
+                
+                const data = JSON.parse(responseText);
+                if (data.choices && data.choices[0] && data.choices[0].message) {
+                    resultDiv.className = 'mt-2 p-3 rounded-lg text-sm bg-green-50 text-green-700 border border-green-200';
+                    resultDiv.innerHTML = `✅ 连接成功！<br>模型回复: "${escapeHtml(data.choices[0].message.content.trim())}"`;
+                } else {
+                    throw new Error('API 响应格式异常');
+                }
+            } catch (error) {
+                resultDiv.className = 'mt-2 p-3 rounded-lg text-sm bg-red-50 text-red-700 border border-red-200';
+                let errorMsg = escapeHtml(error.message);
+                
+                if (error.name === 'AbortError') {
+                    errorMsg = '请求超时（30秒），模型响应太慢或网络不稳定';
+                }
+                
+                // 针对常见错误给出具体提示
+                if (error.message.includes('Unexpected token') || error.message.includes('JSON')) {
+                    errorMsg += '<br><br><strong>可能原因：</strong><br>• API 地址路径不完整，正确格式：<code>https://openrouter.ai/api/v1/chat/completions</code><br>• 系统会尝试自动补全，请刷新页面后重试';
+                } else if (error.message.includes('Provider returned error')) {
+                    errorMsg += '<br><br><strong>OpenRouter 提供商错误：</strong><br>• 模型名称拼写错误<br>• 该模型已下线或不可用<br>• 免费额度已用完<br>• 建议尝试：<code>google/gemini-2.0-flash-exp:free</code> 或 <code>meta-llama/llama-3.1-8b-instruct:free</code><br>• 访问 <a href="https://openrouter.ai/models" target="_blank" class="underline text-blue-600">openrouter.ai/models</a> 查看可用模型';
+                } else if (error.message.includes('超时') || error.message.includes('Timeout')) {
+                    errorMsg += '<br><br><strong>请求超时：</strong><br>• 模型响应太慢，建议换其他模型<br>• 网络连接不稳定<br>• 该模型当前负载较高，请稍后重试';
+                } else if (error.message.includes('401') || error.message.includes('Unauthorized')) {
+                    errorMsg += '<br><br><strong>可能原因：</strong><br>• API Key 无效或已过期<br>• 请检查 API Key 是否正确复制（以 sk-or-v1- 开头）';
+                } else if (error.message.includes('model') || error.message.includes('not available')) {
+                    errorMsg += '<br><br><strong>可能原因：</strong><br>• 模型名称拼写错误<br>• 该模型需要付费，免费模型请用 :free 结尾';
+                } else if (error.message.includes('fetch') || error.message.includes('Failed')) {
+                    errorMsg += '<br><br><strong>可能原因：</strong><br>• 网络连接问题<br>• API 地址格式错误<br>• 请检查 API 地址是否以 https:// 开头';
+                }
+                
+                resultDiv.innerHTML = `❌ 连接失败: ${errorMsg}`;
+            }
+        }
+
+        // ==================== 工具函数 ====================
+        function formatTime(timestamp) {
+            const diff = Date.now() - timestamp;
+            const minutes = Math.floor(diff / 60000);
+            const hours = Math.floor(diff / 3600000);
+            const days = Math.floor(diff / 86400000);
+            
+            if (minutes < 1) return '刚刚';
+            if (minutes < 60) return `${minutes}分钟前`;
+            if (hours < 24) return `${hours}小时前`;
+            if (days < 7) return `${days}天前`;
+            return new Date(timestamp).toLocaleDateString('zh-CN');
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        // 过滤 AI 思考过程
+        function cleanAIResponse(text) {
+            if (!text) return '';
+            
+            let cleaned = text;
+            
+            // 调试：先打印原始内容
+            console.log('原始回复:', cleaned);
+            
+            // 方法1：提取所有引号中的中文内容，返回最后一个（通常是实际回复）
+            const quoteMatches = cleaned.match(/[""']([\u4e00-\u9fa5][^""']*?)[""']/g);
+            if (quoteMatches && quoteMatches.length > 0) {
+                // 找到最长的中文引号内容
+                let longestQuote = '';
+                for (const quote of quoteMatches) {
+                    const content = quote.replace(/[""']/g, '');
+                    if (content.length > longestQuote.length) {
+                        longestQuote = content;
+                    }
+                }
+                if (longestQuote.length >= 5) {
+                    console.log('提取引号内容:', longestQuote);
+                    return longestQuote.trim();
+                }
+            }
+            
+            // 方法2：按标点分割，找到第一个纯中文句子（不含英文指令词）
+            const parts = cleaned.split(/[。！？.!?]/);
+            for (const part of parts) {
+                const trimmed = part.trim();
+                // 如果包含中文且不包含英文指令关键词
+                if (/[\u4e00-\u9fa5]/.test(trimmed) && 
+                    !/(user says|need to|should|output|comment|respond|probably)/i.test(trimmed)) {
+                    if (trimmed.length >= 5) {
+                        console.log('提取中文句子:', trimmed);
+                        return trimmed;
+                    }
+                }
+            }
+            
+            // 方法3：删除所有英文字母和指令词，只保留中文
+            if (/[\u4e00-\u9fa5]/.test(cleaned)) {
+                // 先删除明显的指令段落
+                cleaned = cleaned.replace(/We need to[\s\S]*?(?=[\u4e00-\u9fa5])/gi, '');
+                cleaned = cleaned.replace(/The user says[\s\S]*?(?=[\u4e00-\u9fa5])/gi, '');
+                cleaned = cleaned.replace(/Probably respond like[\s\S]*?(?=[\u4e00-\u9fa5])/gi, '');
+                cleaned = cleaned.replace(/Must be[\s\S]*?(?=[\u4e00-\u9fa5])/gi, '');
+                cleaned = cleaned.replace(/Use emoji[\s\S]*?(?=[\u4e00-\u9fa5])/gi, '');
+                
+                // 提取剩下的中文
+                const chineseOnly = cleaned.match(/[\u4e00-\u9fa5][\u4e00-\u9fa5\d\s，。？！、""''：:；]+/g);
+                if (chineseOnly && chineseOnly.length > 0) {
+                    // 找到最长的中文段落
+                    const longest = chineseOnly.sort((a, b) => b.length - a.length)[0];
+                    if (longest.length >= 5) {
+                        console.log('提取最长中文:', longest);
+                        return longest.trim();
+                    }
+                }
+            }
+            
+            console.log('最终返回:', text.trim());
+            return text.trim();
+        }
+        
+        // ==================== Toast 提示 ====================
+        function showToast(message, type = 'success') {
+            // 移除已有的 toast
+            const existingToast = document.getElementById('toast');
+            if (existingToast) existingToast.remove();
+            
+            const toast = document.createElement('div');
+            toast.id = 'toast';
+            const bgColor = type === 'success' ? 'from-green-400 to-emerald-500' : 
+                           type === 'error' ? 'from-red-400 to-pink-500' : 
+                           'from-blue-400 to-indigo-500';
+            
+            toast.innerHTML = `
+                <div class="fixed top-4 left-1/2 transform -translate-x-1/2 z-[9999] animate-fade-in">
+                    <div class="bg-gradient-to-r ${bgColor} text-white px-6 py-3 rounded-2xl shadow-xl flex items-center gap-2">
+                        <span>${type === 'success' ? '✅' : type === 'error' ? '❌' : 'ℹ️'}</span>
+                        <span class="font-medium">${message}</span>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(toast);
+            
+            // 3秒后自动消失
+            setTimeout(() => {
+                const t = document.getElementById('toast');
+                if (t) {
+                    t.style.opacity = '0';
+                    t.style.transition = 'opacity 0.3s';
+                    setTimeout(() => t.remove(), 300);
+                }
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
