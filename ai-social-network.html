@@ -122,12 +122,7 @@
         }
         
         .fade-in { 
-            animation: fadeIn 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        
-        @keyframes fadeIn { 
-            from { opacity: 0; transform: translateY(20px) scale(0.95); } 
-            to { opacity: 1; transform: translateY(0) scale(1); } 
+            /* 动效已移除 */
         }
         
         .emoji-picker { 
@@ -456,28 +451,28 @@
                 <div class="bg-gradient-to-br from-blue-50 to-purple-50 rounded-2xl p-5 border border-blue-100">
                     <h3 class="font-bold mb-4 flex items-center gap-2">🔑 API 配置</h3>
                     <div class="bg-white/70 rounded-xl p-4 text-sm text-gray-600 mb-4">
-                        <p class="font-bold text-blue-600 mb-2">💡 推荐使用 OpenRouter 免费模型</p>
+                        <p class="font-bold text-blue-600 mb-2">💡 兼容所有 OpenAI API 格式的服务商</p>
                         <ul class="space-y-1">
-                            <li>• 访问 <a href="https://openrouter.ai" target="_blank" class="text-blue-500 underline font-bold">openrouter.ai</a> 获取免费 Key</li>
-                            <li>• 支持 Google Gemini、Meta Llama 等免费模型</li>
+                            <li>• 支持 OpenRouter、SiliconFlow、DeepSeek、Ollama 等</li>
+                            <li>• 任何兼容 OpenAI Chat Completions 接口的服务均可使用</li>
                             <li>• 🔒 API Key 仅保存在本地浏览器</li>
                         </ul>
                     </div>
                     <div class="space-y-4">
                         <div>
                             <label class="block text-sm font-bold text-gray-700 mb-2">API Key</label>
-                            <input type="password" id="apiKey" class="input-field" placeholder="sk-or-v1-...">
+                            <input type="password" id="apiKey" class="input-field" placeholder="sk-...">
                             <p class="text-xs text-gray-400 mt-1">🔐 纯本地存储，请放心填写</p>
                         </div>
                         <div>
                             <label class="block text-sm font-bold text-gray-700 mb-2">API 地址</label>
-                            <input type="text" id="apiUrl" class="input-field" placeholder="https://openrouter.ai/api/v1/chat/completions">
-                            <p class="text-xs text-gray-400 mt-1">OpenRouter 完整地址：<code>https://openrouter.ai/api/v1/chat/completions</code></p>
+                            <input type="text" id="apiUrl" class="input-field" placeholder="https://api.openai.com/v1/chat/completions">
+                            <p class="text-xs text-gray-400 mt-1">填写完整的 Chat Completions 地址，例如：<code>https://api.openai.com/v1/chat/completions</code></p>
                         </div>
                         <div>
                             <label class="block text-sm font-bold text-gray-700 mb-2">模型</label>
-                            <input type="text" id="apiModel" class="input-field" placeholder="例如：google/gemini-2.0-flash-exp:free">
-                            <p class="text-xs text-gray-400 mt-1">免费模型：google/gemini-2.0-flash-exp:free | meta-llama/llama-3.1-8b-instruct:free</p>
+                            <input type="text" id="apiModel" class="input-field" placeholder="例如：gpt-3.5-turbo">
+                            <p class="text-xs text-gray-400 mt-1">填写服务商提供的模型名称，如 gpt-3.5-turbo、deepseek-chat 等</p>
                         </div>
                     </div>
                 </div>
@@ -925,7 +920,7 @@
                     // 如果还没有任何回复，显示超时提示
                     const postEl = document.querySelector(`[data-post-id="${post.id}"]`);
                     if (postEl) {
-                        const repliesContainer = postEl.querySelector('.space-y-2');
+                        const repliesContainer = postEl.querySelector('.replies-container');
                         if (repliesContainer && !repliesContainer.querySelector('.timeout-error')) {
                             repliesContainer.insertAdjacentHTML('beforeend', `
                                 <div class="timeout-error bg-orange-50 border border-orange-200 rounded-lg p-3 text-sm text-orange-700">
@@ -1047,9 +1042,9 @@
                 } catch (error) {
                     console.error('AI 调用失败:', error);
                     // 在界面上显示错误
-                    const postEl = document.querySelector(`[data-post-id="${post.id}"]`);
+                    let postEl = document.querySelector(`[data-post-id="${post.id}"]`);
                     if (postEl) {
-                        const repliesContainer = postEl.querySelector('.space-y-2');
+                        const repliesContainer = postEl.querySelector('.replies-container');
                         if (repliesContainer && !repliesContainer.querySelector('.api-error')) {
                             repliesContainer.insertAdjacentHTML('beforeend', `
                                 <div class="api-error bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-700">
@@ -1068,7 +1063,7 @@
                     });
                     
                     // 局部更新DOM
-                    const postEl = document.querySelector(`[data-post-id="${post.id}"]`);
+                    postEl = document.querySelector(`[data-post-id="${post.id}"]`);
                     if (postEl) {
                         const repliesContainer = postEl.querySelector('.replies-container');
                         if (repliesContainer) {
@@ -1124,15 +1119,25 @@
         async function callAI(follower, postContent) {
             const settings = DB.get('settings') || {};
             
-            // 智能补全 API 地址
+            // 智能补全 API 地址（兼容所有 OpenAI 格式的服务商）
             let apiUrl = settings.apiUrl || '';
-            if (apiUrl && apiUrl.includes('openrouter.ai') && !apiUrl.includes('/chat/completions')) {
-                if (apiUrl.endsWith('/api/v1')) {
+            if (apiUrl && !apiUrl.includes('/chat/completions')) {
+                // 用户可能只填了 base URL，自动补全路径
+                if (apiUrl.endsWith('/v1')) {
                     apiUrl += '/chat/completions';
-                    console.log('自动补全 OpenRouter API 地址:', apiUrl);
-                } else if (apiUrl === 'https://openrouter.ai' || apiUrl === 'https://openrouter.ai/') {
-                    apiUrl = 'https://openrouter.ai/api/v1/chat/completions';
-                    console.log('自动补全 OpenRouter API 地址:', apiUrl);
+                    console.log('自动补全 API 地址:', apiUrl);
+                } else if (apiUrl.endsWith('/v1/')) {
+                    apiUrl += 'chat/completions';
+                    console.log('自动补全 API 地址:', apiUrl);
+                } else if (apiUrl.match(/^https?:\/\/[^\/]+\/?$/)) {
+                    // 只有域名，如 https://api.openai.com 或 https://openrouter.ai
+                    apiUrl = apiUrl.replace(/\/$/, '') + '/v1/chat/completions';
+                    console.log('自动补全 API 地址:', apiUrl);
+                }
+                // OpenRouter 特殊处理：/api/v1 路径
+                if (apiUrl.includes('openrouter.ai') && apiUrl.endsWith('/v1/chat/completions') && !apiUrl.includes('/api/')) {
+                    apiUrl = apiUrl.replace('/v1/chat/completions', '/api/v1/chat/completions');
+                    console.log('OpenRouter 特殊路径补全:', apiUrl);
                 }
             }
             
@@ -1181,13 +1186,15 @@
                     model: settings.apiModel,
                     messages: [
                         { 
+                            role: 'system', 
+                            content: `你是${follower.name}，性格：${follower.personality}。请用1-2句话自然回复，可以带emoji，不要暴露你是AI。`
+                        },
+                        { 
                             role: 'user', 
-                            content: `你是${follower.name}，性格：${follower.personality}。
-
-回复用户的这条动态（只输出回复内容，1-2句话，带emoji）："${postContent}"`
+                            content: postContent
                         }
                     ],
-                    max_tokens: 60
+                    max_tokens: 100
                 };
                 console.log('请求体:', JSON.stringify(requestBody, null, 2));
                 
@@ -1394,14 +1401,21 @@
             let apiUrl = document.getElementById('apiUrl').value.trim();
             let apiModel = document.getElementById('apiModel').value.trim();
             
-            // 智能补全 API 地址
-            if (apiUrl && apiUrl.includes('openrouter.ai') && !apiUrl.includes('/chat/completions')) {
-                if (apiUrl.endsWith('/api/v1')) {
+            // 智能补全 API 地址（兼容所有 OpenAI 格式的服务商）
+            if (apiUrl && !apiUrl.includes('/chat/completions')) {
+                if (apiUrl.endsWith('/v1')) {
                     apiUrl += '/chat/completions';
-                    console.log('自动补全 OpenRouter API 地址:', apiUrl);
-                } else if (apiUrl === 'https://openrouter.ai' || apiUrl === 'https://openrouter.ai/') {
-                    apiUrl = 'https://openrouter.ai/api/v1/chat/completions';
-                    console.log('自动补全 OpenRouter API 地址:', apiUrl);
+                    console.log('自动补全 API 地址:', apiUrl);
+                } else if (apiUrl.endsWith('/v1/')) {
+                    apiUrl += 'chat/completions';
+                    console.log('自动补全 API 地址:', apiUrl);
+                } else if (apiUrl.match(/^https?:\/\/[^\/]+\/?$/)) {
+                    apiUrl = apiUrl.replace(/\/$/, '') + '/v1/chat/completions';
+                    console.log('自动补全 API 地址:', apiUrl);
+                }
+                if (apiUrl.includes('openrouter.ai') && apiUrl.endsWith('/v1/chat/completions') && !apiUrl.includes('/api/')) {
+                    apiUrl = apiUrl.replace('/v1/chat/completions', '/api/v1/chat/completions');
+                    console.log('OpenRouter 特殊路径补全:', apiUrl);
                 }
             }
             
@@ -1499,15 +1513,15 @@
                 
                 // 针对常见错误给出具体提示
                 if (error.message.includes('Unexpected token') || error.message.includes('JSON')) {
-                    errorMsg += '<br><br><strong>可能原因：</strong><br>• API 地址路径不完整，正确格式：<code>https://openrouter.ai/api/v1/chat/completions</code><br>• 系统会尝试自动补全，请刷新页面后重试';
+                    errorMsg += '<br><br><strong>可能原因：</strong><br>• API 地址路径不完整，正确格式：<code>https://your-api.com/v1/chat/completions</code><br>• 系统会尝试自动补全，请刷新页面后重试';
                 } else if (error.message.includes('Provider returned error')) {
-                    errorMsg += '<br><br><strong>OpenRouter 提供商错误：</strong><br>• 模型名称拼写错误<br>• 该模型已下线或不可用<br>• 免费额度已用完<br>• 建议尝试：<code>google/gemini-2.0-flash-exp:free</code> 或 <code>meta-llama/llama-3.1-8b-instruct:free</code><br>• 访问 <a href="https://openrouter.ai/models" target="_blank" class="underline text-blue-600">openrouter.ai/models</a> 查看可用模型';
+                    errorMsg += '<br><br><strong>服务商提供商错误：</strong><br>• 模型名称拼写错误或该模型不可用<br>• 免费额度可能已用完<br>• 请检查服务商文档确认可用模型';
                 } else if (error.message.includes('超时') || error.message.includes('Timeout')) {
                     errorMsg += '<br><br><strong>请求超时：</strong><br>• 模型响应太慢，建议换其他模型<br>• 网络连接不稳定<br>• 该模型当前负载较高，请稍后重试';
                 } else if (error.message.includes('401') || error.message.includes('Unauthorized')) {
-                    errorMsg += '<br><br><strong>可能原因：</strong><br>• API Key 无效或已过期<br>• 请检查 API Key 是否正确复制（以 sk-or-v1- 开头）';
+                    errorMsg += '<br><br><strong>可能原因：</strong><br>• API Key 无效或已过期<br>• 请检查 API Key 是否正确复制';
                 } else if (error.message.includes('model') || error.message.includes('not available')) {
-                    errorMsg += '<br><br><strong>可能原因：</strong><br>• 模型名称拼写错误<br>• 该模型需要付费，免费模型请用 :free 结尾';
+                    errorMsg += '<br><br><strong>可能原因：</strong><br>• 模型名称拼写错误<br>• 该模型在当前服务商不可用或需要付费<br>• 请检查服务商文档确认可用模型名称';
                 } else if (error.message.includes('fetch') || error.message.includes('Failed')) {
                     errorMsg += '<br><br><strong>可能原因：</strong><br>• 网络连接问题<br>• API 地址格式错误<br>• 请检查 API 地址是否以 https:// 开头';
                 }
@@ -1540,65 +1554,25 @@
         function cleanAIResponse(text) {
             if (!text) return '';
             
+            console.log('cleanAIResponse 原始输入:', JSON.stringify(text));
+            
             let cleaned = text;
             
-            // 调试：先打印原始内容
-            console.log('原始回复:', cleaned);
+            // 方法0：删除 &lt;think&gt;...&lt;/think&gt; 标签及其内容（DeepSeek 等模型的思考过程）
+            // 匹配从 &lt;think&gt; 开始到 &lt;/think&gt; 结束的所有内容（含换行）
+            cleaned = cleaned.replace(/<think>[\s\S]*?<\/think>/gi, '');
+            // 处理未闭合的 &lt;think&gt; 标签（流式输出可能只输出了开头）
+            cleaned = cleaned.replace(/<think>[\s\S]*$/gi, '');
+            cleaned = cleaned.trim();
+            console.log('过滤 think 后:', JSON.stringify(cleaned));
             
-            // 方法1：提取所有引号中的中文内容，返回最后一个（通常是实际回复）
-            const quoteMatches = cleaned.match(/[""']([\u4e00-\u9fa5][^""']*?)[""']/g);
-            if (quoteMatches && quoteMatches.length > 0) {
-                // 找到最长的中文引号内容
-                let longestQuote = '';
-                for (const quote of quoteMatches) {
-                    const content = quote.replace(/[""']/g, '');
-                    if (content.length > longestQuote.length) {
-                        longestQuote = content;
-                    }
-                }
-                if (longestQuote.length >= 5) {
-                    console.log('提取引号内容:', longestQuote);
-                    return longestQuote.trim();
-                }
+            // 如果过滤后还有有意义的中文内容，直接返回
+            if (/[\u4e00-\u9fa5]/.test(cleaned) && cleaned.length >= 2) {
+                return cleaned;
             }
             
-            // 方法2：按标点分割，找到第一个纯中文句子（不含英文指令词）
-            const parts = cleaned.split(/[。！？.!?]/);
-            for (const part of parts) {
-                const trimmed = part.trim();
-                // 如果包含中文且不包含英文指令关键词
-                if (/[\u4e00-\u9fa5]/.test(trimmed) && 
-                    !/(user says|need to|should|output|comment|respond|probably)/i.test(trimmed)) {
-                    if (trimmed.length >= 5) {
-                        console.log('提取中文句子:', trimmed);
-                        return trimmed;
-                    }
-                }
-            }
-            
-            // 方法3：删除所有英文字母和指令词，只保留中文
-            if (/[\u4e00-\u9fa5]/.test(cleaned)) {
-                // 先删除明显的指令段落
-                cleaned = cleaned.replace(/We need to[\s\S]*?(?=[\u4e00-\u9fa5])/gi, '');
-                cleaned = cleaned.replace(/The user says[\s\S]*?(?=[\u4e00-\u9fa5])/gi, '');
-                cleaned = cleaned.replace(/Probably respond like[\s\S]*?(?=[\u4e00-\u9fa5])/gi, '');
-                cleaned = cleaned.replace(/Must be[\s\S]*?(?=[\u4e00-\u9fa5])/gi, '');
-                cleaned = cleaned.replace(/Use emoji[\s\S]*?(?=[\u4e00-\u9fa5])/gi, '');
-                
-                // 提取剩下的中文
-                const chineseOnly = cleaned.match(/[\u4e00-\u9fa5][\u4e00-\u9fa5\d\s，。？！、""''：:；]+/g);
-                if (chineseOnly && chineseOnly.length > 0) {
-                    // 找到最长的中文段落
-                    const longest = chineseOnly.sort((a, b) => b.length - a.length)[0];
-                    if (longest.length >= 5) {
-                        console.log('提取最长中文:', longest);
-                        return longest.trim();
-                    }
-                }
-            }
-            
-            console.log('最终返回:', text.trim());
-            return text.trim();
+            // 兜底：返回原文
+            return cleaned || text.trim();
         }
         
         // ==================== Toast 提示 ====================
